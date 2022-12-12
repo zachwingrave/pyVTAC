@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 # My ignores
-src/venv/
 data/
 docs/
+src/requirements/
+src/venv/
