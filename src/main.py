@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.filedialog as fd
 import ttkbootstrap as ttk
 import ttkbootstrap.constants as ttkc
 
@@ -8,16 +9,40 @@ class MainApplication(tk.Frame):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
 
-        b1 = ttk.Button(self, text="Button 1", bootstyle=ttkc.SUCCESS)
-        b1.pack(side=ttkc.LEFT, padx=5, pady=10)
+        self.btnOpenFile = ttk.Button(
+            self, text="Open file", bootstyle=ttkc.SUCCESS, command=self.browseFiles
+        )
+        self.btnOpenFile.pack(side=ttkc.LEFT, padx=5, pady=10)
 
-        b2 = ttk.Button(self, text="Button 2", bootstyle=(ttkc.INFO, ttkc.OUTLINE))
-        b2.pack(side=ttkc.LEFT, padx=5, pady=10)
+        self.btnQuit = ttk.Button(
+            self, text="Quit", bootstyle=(ttkc.INFO, ttkc.OUTLINE), command=self.quit
+        )
+        self.btnQuit.pack(side=ttkc.LEFT, padx=5, pady=10)
+
+        self.lblFileName = ttk.Label(self, bootstyle=(ttkc.DEFAULT))
 
         # <create the rest of your GUI here>
+
+    def browseFiles(self):
+        filename = fd.askopenfilename(
+            initialdir="~/Downloads",
+            title="Select data source",
+            filetypes=(
+                ("Excel files", "*.xlsx *.xls"),
+                ("Comma separated", "*.csv"),
+                ("All files", "*.*"),
+            ),
+        )
+
+        if filename != "":
+            self.lblFileName.pack(side=ttkc.BOTTOM, padx=5, pady=10)
+            self.lblFileName.configure(text="File Opened: " + filename)
+        else:
+            self.lblFileName.pack_forget()
 
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.wm_title("pyVTAC")
     MainApplication(root).pack(side="top", fill="both", expand=True)
     root.mainloop()
