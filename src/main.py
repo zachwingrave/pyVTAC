@@ -15,6 +15,7 @@ PATHWAY = "Pathway Package"
 MOBILE_NO = "MOBILE_PHONE_NO"
 HOME_NO = "HOME_PHONE_NO"
 STREAM = "Stream"
+CAMPUS = "Campus"
 
 
 class MainApplication(tk.Frame):
@@ -95,6 +96,7 @@ class MainApplication(tk.Frame):
         else:
             self.logger.info("No file selected")
             self.btnSortData.configure(state="disabled")
+            self.btnOpenResults.configure(state="disabled")
             self.writer = None
             self.data = None
 
@@ -131,13 +133,14 @@ class MainApplication(tk.Frame):
         DF_FIRST_CONTACT = self.data.drop_duplicates(subset=STUDENT_ID)
         self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
 
+        DF_ALL_CLEANED = self.data  # ready for cleaning
+
         """TODO Step 2: Format mobile numbers"""
 
         # code here
 
-        """TODO Step 3: Append "Stream" to "Course Title" - add Stream name in brackets after Course Title"""
+        """Step 3: Append "Stream" to "Course Title" - add Stream name in brackets after Course Title"""
 
-        DF_ALL_CLEANED = self.data
         DF_ALL_CLEANED[COURSE_TITLE] = (
             DF_ALL_CLEANED[COURSE_TITLE] + " (" + DF_ALL_CLEANED[STREAM] + ")"
         ).replace(
@@ -146,7 +149,14 @@ class MainApplication(tk.Frame):
 
         """TODO Step 4: Append "Campus" to "Course Title" if "Campus"="Hawthorn" for the Diploma of Community Services"""
 
-        # code here
+        if CAMPUS in DF_ALL_CLEANED.columns:
+            DF_ALL_CLEANED[COURSE_TITLE] = (
+                DF_ALL_CLEANED[COURSE_TITLE]
+                + " - "
+                + DF_ALL_CLEANED[CAMPUS].fillna("")  # replace NaN with empty string
+            ).replace(
+                to_replace=" - $", value="", regex=True
+            )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
 
         """TODO Step 5: Sort duplicate offers (i.e. packaged degrees) according to "Course Title" enum (e.g. "Diploma"=0, "Advanced Diploma"=1, "Bachelor"=2) and append higher course offer to lower course offer (lower first) - append with / THANK YOU TAYLOR!"""
 
@@ -175,6 +185,7 @@ class MainApplication(tk.Frame):
         self.btnSortData.configure(text="Sorting complete", bootstyle=ttkc.SUCCESS)
         self.logger.debug("Data sort complete")
         self.openResults()
+        self.btnOpenResults.configure(state="enabled")
 
 
 class TextHandler(logging.Handler):
