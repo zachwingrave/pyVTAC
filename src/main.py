@@ -4,6 +4,7 @@ import tkinter.scrolledtext as tkst
 import ttkbootstrap as ttk
 import ttkbootstrap.constants as ttkc
 import pandas as pd
+import phonenumbers
 import logging
 import os
 
@@ -84,8 +85,6 @@ class MainApplication(tk.Frame):
             ),
         )
 
-        """TODO error handling"""
-
         if filename != "":
             self.logger.info("File Opened: " + filename)
             self.btnSortData.configure(state="enabled")
@@ -125,19 +124,50 @@ class MainApplication(tk.Frame):
         self.dataSummary(self.data, "ALL RECORDS")  # Summarise initial data state
         self.btnSortData.configure(text="Sorting in progress", bootstyle=ttkc.WARNING)
 
-        """Step 1: Dedupe entire list by Student ID (S1SSP_STU_SPK_STU_ID) and create sheet FIRST_CONTACT"""
+        DF_CLEANING = self.data  # ready for cleaning
+
+        """Step 1: Format mobile numbers"""
+
+        def parseNumber(
+            number,
+        ):  # use 'phonenumbers' module to format phone numbers to AU
+            try:
+                parsedNumber = (
+                    phonenumbers.format_number(
+                        phonenumbers.parse(number, "AU"),
+                        phonenumbers.PhoneNumberFormat.INTERNATIONAL,  # leads with international calling code, +61
+                    )
+                    .replace("+", "")  # drop the leading +
+                    .replace(" ", "")  # drop spaces in the middle of the number
+                )
+                return parsedNumber
+            except (phonenumbers.phonenumberutil.NumberParseException):
+                if number == "nan":  # replace NaN with empty string
+                    return ""
+                else:
+                    return number
+
+        DF_CLEANING[MOBILE_NO] = DF_CLEANING.apply(
+            lambda x: parseNumber(
+                str(x[MOBILE_NO])
+            ),  # apply the 'parseNumber' callback function to all row values in the MOBILE_NO column
+            axis="columns",
+        )
+
+        DF_CLEANING[HOME_NO] = DF_CLEANING.apply(
+            lambda x: parseNumber(
+                str(x[HOME_NO])
+            ),  # apply the 'parseNumber' callback function to all row values in the HOME_NO column
+            axis="columns",
+        )
+
+        """Step 2: Dedupe entire list by Student ID (S1SSP_STU_SPK_STU_ID) and create sheet FIRST_CONTACT"""
 
         self.logger.info(
             "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
         )
-        DF_FIRST_CONTACT = self.data.drop_duplicates(subset=STUDENT_ID)
+        DF_FIRST_CONTACT = DF_CLEANING.drop_duplicates(subset=STUDENT_ID)
         self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
-
-        DF_CLEANING = self.data  # ready for cleaning
-
-        """TODO Step 2: Format mobile numbers"""
-
-        # code here
 
         """Step 3: Append "Stream" to "Course Title" - add Stream name in brackets after Course Title"""
 
@@ -165,22 +195,22 @@ class MainApplication(tk.Frame):
         """Step 6: Filter deduped list from Step 5 into individual sheets for "VC_SCHOLARSHIPS", "AVIATION", "HARD_PACKAGE", "SOFT_PACKAGE", "HARD_SINGLE", "SOFT_SINGLE" """
 
         DF_VC_SCHOLARSHIP = DF_CLEANING[DF_CLEANING[VC_ELIGIBILITY] == "Eligible"]
-        DF_AVIATION = DF_CLEANING  # TODO
+        # DF_AVIATION = DF_CLEANING  # TODO
         DF_HARD_PACKAGE = DF_CLEANING  # TODO
-        DF_SOFT_PACKAGE = DF_CLEANING  # TODO
-        DF_HARD_SINGLE = DF_CLEANING  # TODO
-        DF_SOFT_SINGLE = DF_CLEANING  # TODO
+        # DF_SOFT_PACKAGE = DF_CLEANING  # TODO
+        # DF_HARD_SINGLE = DF_CLEANING  # TODO
+        # DF_SOFT_SINGLE = DF_CLEANING  # TODO
 
         """Step 7: Save all new sheets to disk"""
 
         self.logger.info("Saving sorted data to spreadsheet")
         DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT")
         DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
-        DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
+        # DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
         DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
-        DF_SOFT_PACKAGE.to_excel(self.writer, sheet_name="SOFT_PACKAGE")
-        DF_HARD_SINGLE.to_excel(self.writer, sheet_name="HARD_SINGLE")
-        DF_SOFT_SINGLE.to_excel(self.writer, sheet_name="SOFT_SINGLE")
+        # DF_SOFT_PACKAGE.to_excel(self.writer, sheet_name="SOFT_PACKAGE")
+        # DF_HARD_SINGLE.to_excel(self.writer, sheet_name="HARD_SINGLE")
+        # DF_SOFT_SINGLE.to_excel(self.writer, sheet_name="SOFT_SINGLE")
 
         self.logger.debug("Saving file to disk")
         self.writer.close()
