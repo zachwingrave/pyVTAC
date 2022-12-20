@@ -133,7 +133,7 @@ class MainApplication(tk.Frame):
         DF_FIRST_CONTACT = self.data.drop_duplicates(subset=STUDENT_ID)
         self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
 
-        DF_ALL_CLEANED = self.data  # ready for cleaning
+        DF_CLEANING = self.data  # ready for cleaning
 
         """TODO Step 2: Format mobile numbers"""
 
@@ -141,19 +141,19 @@ class MainApplication(tk.Frame):
 
         """Step 3: Append "Stream" to "Course Title" - add Stream name in brackets after Course Title"""
 
-        DF_ALL_CLEANED[COURSE_TITLE] = (
-            DF_ALL_CLEANED[COURSE_TITLE] + " (" + DF_ALL_CLEANED[STREAM] + ")"
+        DF_CLEANING[COURSE_TITLE] = (
+            DF_CLEANING[COURSE_TITLE] + " (" + DF_CLEANING[STREAM] + ")"
         ).replace(
             to_replace=" \(  \)", value="", regex=True
         )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
 
         """Step 4: Append "Campus" to "Course Title" """
 
-        if CAMPUS in DF_ALL_CLEANED.columns:
-            DF_ALL_CLEANED[COURSE_TITLE] = (
-                DF_ALL_CLEANED[COURSE_TITLE]
+        if CAMPUS in DF_CLEANING.columns:
+            DF_CLEANING[COURSE_TITLE] = (
+                DF_CLEANING[COURSE_TITLE]
                 + " - "
-                + DF_ALL_CLEANED[CAMPUS].fillna("")  # replace NaN with empty string
+                + DF_CLEANING[CAMPUS].fillna("")  # replace NaN with empty string
             ).replace(
                 to_replace=" - $", value="", regex=True
             )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
@@ -164,12 +164,12 @@ class MainApplication(tk.Frame):
 
         """Step 6: Filter deduped list from Step 5 into individual sheets for "VC_SCHOLARSHIPS", "AVIATION", "HARD_PACKAGE", "SOFT_PACKAGE", "HARD_SINGLE", "SOFT_SINGLE" """
 
-        DF_VC_SCHOLARSHIP = DF_ALL_CLEANED[DF_ALL_CLEANED[VC_ELIGIBILITY] == "Eligible"]
-        DF_AVIATION = DF_ALL_CLEANED  # TODO
-        DF_HARD_PACKAGE = DF_ALL_CLEANED  # TODO
-        DF_SOFT_PACKAGE = DF_ALL_CLEANED  # TODO
-        DF_HARD_SINGLE = DF_ALL_CLEANED  # TODO
-        DF_SOFT_SINGLE = DF_ALL_CLEANED  # TODO
+        DF_VC_SCHOLARSHIP = DF_CLEANING[DF_CLEANING[VC_ELIGIBILITY] == "Eligible"]
+        DF_AVIATION = DF_CLEANING  # TODO
+        DF_HARD_PACKAGE = DF_CLEANING  # TODO
+        DF_SOFT_PACKAGE = DF_CLEANING  # TODO
+        DF_HARD_SINGLE = DF_CLEANING  # TODO
+        DF_SOFT_SINGLE = DF_CLEANING  # TODO
 
         """Step 7: Save all new sheets to disk"""
 
