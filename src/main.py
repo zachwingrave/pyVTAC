@@ -162,9 +162,14 @@ class MainApplication(tk.Frame):
 
         # code here
 
-        """TODO Step 6: Filter deduped list from Step 5 into individual sheets for "VC_SCHOLARSHIPS", "AVIATION", "HARD_PACKAGE", "SOFT_PACKAGE", "HARD_SINGLE", "SOFT_SINGLE" """
+        """Step 6: Filter deduped list from Step 5 into individual sheets for "VC_SCHOLARSHIPS", "AVIATION", "HARD_PACKAGE", "SOFT_PACKAGE", "HARD_SINGLE", "SOFT_SINGLE" """
 
-        # code here
+        DF_VC_SCHOLARSHIP = DF_ALL_CLEANED[DF_ALL_CLEANED[VC_ELIGIBILITY] == "Eligible"]
+        DF_AVIATION = DF_ALL_CLEANED  # TODO
+        DF_HARD_PACKAGE = DF_ALL_CLEANED  # TODO
+        DF_SOFT_PACKAGE = DF_ALL_CLEANED  # TODO
+        DF_HARD_SINGLE = DF_ALL_CLEANED  # TODO
+        DF_SOFT_SINGLE = DF_ALL_CLEANED  # TODO
 
         """Step 7: Save all new sheets to disk"""
 
@@ -172,12 +177,12 @@ class MainApplication(tk.Frame):
         self.data.to_excel(self.writer, sheet_name="ALL_RECORDS")
         DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT")
         DF_ALL_CLEANED.to_excel(self.writer, sheet_name="ALL_CLEANED")
-        # DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
-        # DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
-        # DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
-        # DF_SOFT_PACKAGE.to_excel(self.writer, sheet_name="SOFT_PACKAGE")
-        # DF_HARD_SINGLE.to_excel(self.writer, sheet_name="HARD_SINGLE")
-        # DF_SOFT_SINGLE.to_excel(self.writer, sheet_name="SOFT_SINGLE")
+        DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
+        DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
+        DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
+        DF_SOFT_PACKAGE.to_excel(self.writer, sheet_name="SOFT_PACKAGE")
+        DF_HARD_SINGLE.to_excel(self.writer, sheet_name="HARD_SINGLE")
+        DF_SOFT_SINGLE.to_excel(self.writer, sheet_name="SOFT_SINGLE")
 
         self.logger.debug("Saving file to disk")
         self.writer.close()
