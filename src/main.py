@@ -234,7 +234,7 @@ class TextHandler(logging.Handler):
         logging.Handler.__init__(self)
 
         logging.basicConfig(
-            filename="log/app.log",
+            # filename="log/app.log",
             format="%(asctime)s %(levelname)-4s %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
             level=logging.DEBUG,
