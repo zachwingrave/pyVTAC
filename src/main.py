@@ -147,7 +147,7 @@ class MainApplication(tk.Frame):
             to_replace=" \(  \)", value="", regex=True
         )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
 
-        """TODO Step 4: Append "Campus" to "Course Title" if "Campus"="Hawthorn" for the Diploma of Community Services"""
+        """Step 4: Append "Campus" to "Course Title" if "Campus"="Hawthorn" for the Diploma of Community Services"""
 
         if CAMPUS in DF_ALL_CLEANED.columns:
             DF_ALL_CLEANED[COURSE_TITLE] = (
