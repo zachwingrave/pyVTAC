@@ -17,6 +17,7 @@ MOBILE_NO = "MOBILE_PHONE_NO"
 HOME_NO = "HOME_PHONE_NO"
 STREAM = "Stream"
 CAMPUS = "Campus"
+PATHWAY = "Pathway Package"
 
 
 class MainApplication(tk.Frame):
@@ -47,7 +48,7 @@ class MainApplication(tk.Frame):
         self.btnOpenResults = ttk.Button(
             self,
             text="Open results",
-            bootstyle=ttkc.SUCCESS,
+            bootstyle=ttkc.INFO,
             command=self.openResults,
             state="disabled",
         )
@@ -86,12 +87,22 @@ class MainApplication(tk.Frame):
         )
 
         if filename != "":
-            self.logger.info("File Opened: " + filename)
-            self.btnSortData.configure(state="enabled")
-            self.writer = pd.ExcelWriter(
-                path=filename, mode="a", if_sheet_exists="replace"
-            )
-            self.data = pd.read_excel(io=filename, engine="openpyxl")
+            try:
+                self.logger.info("File Opened: " + filename)
+                self.btnSortData.configure(state="enabled")
+                self.writer = pd.ExcelWriter(
+                    path=filename, mode="a", if_sheet_exists="replace"
+                )
+                self.data = pd.read_excel(io=filename, engine="openpyxl")
+            except (PermissionError) as e:
+                # self.logger.exception(e)
+                self.logger.error(
+                    "Error: File open in another program. Close and try again."
+                )
+                self.btnSortData.configure(state="disabled")
+                self.btnOpenResults.configure(state="disabled")
+                self.writer = None
+                self.data = None
         else:
             self.logger.info("No file selected")
             self.btnSortData.configure(state="disabled")
@@ -124,7 +135,9 @@ class MainApplication(tk.Frame):
         self.dataSummary(self.data, "ALL RECORDS")  # Summarise initial data state
         self.btnSortData.configure(text="Sorting in progress", bootstyle=ttkc.WARNING)
 
-        DF_CLEANING = self.data  # ready for cleaning
+        DF_ALL_RECORDS = self.data.sort_values(
+            by=[STUDENT_ID, COURSE_TITLE], ascending=[True, True]
+        )  # ready for cleaning
 
         """Step 1: Format mobile numbers"""
 
@@ -147,47 +160,43 @@ class MainApplication(tk.Frame):
                 else:
                     return number
 
-        DF_CLEANING[MOBILE_NO] = DF_CLEANING.apply(
+        DF_ALL_RECORDS[MOBILE_NO] = DF_ALL_RECORDS.apply(
             lambda x: parseNumber(
                 str(x[MOBILE_NO])
             ),  # apply the 'parseNumber' callback function to all row values in the MOBILE_NO column
             axis="columns",
         )
 
-        DF_CLEANING[HOME_NO] = DF_CLEANING.apply(
+        DF_ALL_RECORDS[HOME_NO] = DF_ALL_RECORDS.apply(
             lambda x: parseNumber(
                 str(x[HOME_NO])
             ),  # apply the 'parseNumber' callback function to all row values in the HOME_NO column
             axis="columns",
         )
 
-        """Step 1.5 Create DF_ALL_RECORDS for non-sectioned, phone number formatted records."""
-
-        DF_ALL_RECORDS = DF_CLEANING
-
         """Step 2: Dedupe entire list by Student ID (S1SSP_STU_SPK_STU_ID) and create sheet FIRST_CONTACT"""
 
         self.logger.info(
             "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
         )
-        DF_FIRST_CONTACT = DF_CLEANING.drop_duplicates(subset=STUDENT_ID)
+        DF_FIRST_CONTACT = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID)
         self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
 
         """Step 3: Append "Stream" to "Course Title" - add Stream name in brackets after Course Title"""
 
-        DF_CLEANING[COURSE_TITLE] = (
-            DF_CLEANING[COURSE_TITLE] + " (" + DF_CLEANING[STREAM] + ")"
+        DF_ALL_RECORDS[COURSE_TITLE] = (
+            DF_ALL_RECORDS[COURSE_TITLE] + " (" + DF_ALL_RECORDS[STREAM] + ")"
         ).replace(
             to_replace=" \(  \)", value="", regex=True
         )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
 
         """Step 4: Append "Campus" to "Course Title" """
 
-        if CAMPUS in DF_CLEANING.columns:
-            DF_CLEANING[COURSE_TITLE] = (
-                DF_CLEANING[COURSE_TITLE]
+        if CAMPUS in DF_ALL_RECORDS.columns:
+            DF_ALL_RECORDS[COURSE_TITLE] = (
+                DF_ALL_RECORDS[COURSE_TITLE]
                 + " - "
-                + DF_CLEANING[CAMPUS].fillna("")  # replace NaN with empty string
+                + DF_ALL_RECORDS[CAMPUS].fillna("")  # replace NaN with empty string
             ).replace(
                 to_replace=" - $", value="", regex=True
             )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
@@ -198,12 +207,14 @@ class MainApplication(tk.Frame):
 
         """Step 6: Filter deduped list from Step 5 into individual sheets for "VC_SCHOLARSHIPS", "AVIATION", "HARD_PACKAGE", "SOFT_PACKAGE", "HARD_SINGLE", "SOFT_SINGLE" """
 
-        DF_VC_SCHOLARSHIP = DF_CLEANING[DF_CLEANING[VC_ELIGIBILITY] == "Eligible"]
-        # DF_AVIATION = DF_CLEANING  # TODO
-        # DF_HARD_PACKAGE = DF_CLEANING  # TODO
-        # DF_SOFT_PACKAGE = DF_CLEANING  # TODO
-        # DF_HARD_SINGLE = DF_CLEANING  # TODO
-        # DF_SOFT_SINGLE = DF_CLEANING  # TODO
+        DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Eligible"]
+        DF_PACKAGE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == "Yes"]
+        DF_SINGLE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] != "Yes"]
+        # DF_AVIATION = DF_ALL_RECORDS  # TODO
+        # DF_HARD_PACKAGE = DF_ALL_RECORDS  # TODO
+        # DF_SOFT_PACKAGE = DF_ALL_RECORDS  # TODO
+        # DF_HARD_SINGLE = DF_ALL_RECORDS  # TODO
+        # DF_SOFT_SINGLE = DF_ALL_RECORDS  # TODO
 
         """Step 7: Save all new sheets to disk"""
 
@@ -211,6 +222,8 @@ class MainApplication(tk.Frame):
         DF_ALL_RECORDS.to_excel(self.writer, sheet_name="ALL_RECORDS")
         DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT")
         DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
+        DF_PACKAGE_OFFERS.to_excel(self.writer, sheet_name="PACKAGE_OFFERS")
+        DF_SINGLE_OFFERS.to_excel(self.writer, sheet_name="SINGLE_OFFERS")
         # DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
         # DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
         # DF_SOFT_PACKAGE.to_excel(self.writer, sheet_name="SOFT_PACKAGE")
@@ -220,7 +233,7 @@ class MainApplication(tk.Frame):
         self.logger.debug("Saving file to disk")
         self.writer.close()
 
-        self.btnSortData.configure(text="Sorting complete", bootstyle=ttkc.SUCCESS)
+        self.btnSortData.configure(state="disabled")
         self.logger.debug("Data sort complete")
         self.openResults()
         self.btnOpenResults.configure(state="enabled")
