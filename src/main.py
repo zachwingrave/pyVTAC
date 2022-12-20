@@ -161,6 +161,10 @@ class MainApplication(tk.Frame):
             axis="columns",
         )
 
+        """Step 1.5 Create DF_ALL_RECORDS for non-sectioned, phone number formatted records."""
+
+        DF_ALL_RECORDS = DF_CLEANING
+
         """Step 2: Dedupe entire list by Student ID (S1SSP_STU_SPK_STU_ID) and create sheet FIRST_CONTACT"""
 
         self.logger.info(
@@ -196,7 +200,7 @@ class MainApplication(tk.Frame):
 
         DF_VC_SCHOLARSHIP = DF_CLEANING[DF_CLEANING[VC_ELIGIBILITY] == "Eligible"]
         # DF_AVIATION = DF_CLEANING  # TODO
-        DF_HARD_PACKAGE = DF_CLEANING  # TODO
+        # DF_HARD_PACKAGE = DF_CLEANING  # TODO
         # DF_SOFT_PACKAGE = DF_CLEANING  # TODO
         # DF_HARD_SINGLE = DF_CLEANING  # TODO
         # DF_SOFT_SINGLE = DF_CLEANING  # TODO
@@ -204,10 +208,11 @@ class MainApplication(tk.Frame):
         """Step 7: Save all new sheets to disk"""
 
         self.logger.info("Saving sorted data to spreadsheet")
+        DF_ALL_RECORDS.to_excel(self.writer, sheet_name="ALL_RECORDS")
         DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT")
         DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
         # DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
-        DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
+        # DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
         # DF_SOFT_PACKAGE.to_excel(self.writer, sheet_name="SOFT_PACKAGE")
         # DF_HARD_SINGLE.to_excel(self.writer, sheet_name="HARD_SINGLE")
         # DF_SOFT_SINGLE.to_excel(self.writer, sheet_name="SOFT_SINGLE")
