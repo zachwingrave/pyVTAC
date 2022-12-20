@@ -205,12 +205,6 @@ class TextHandler(logging.Handler):
         self.log.configure(state="disabled")
 
 
-class ExcelSheet(pd.DataFrame):
-    def __init__(self, sheetName, *args, **kwargs):
-        pd.DataFrame.__init__(self, *args, **kwargs)
-        self.sheetName = sheetName
-
-
 if __name__ == "__main__":
     root = tk.Tk()
     root.wm_title("pyVTAC")
