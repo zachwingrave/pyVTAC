@@ -166,7 +166,7 @@ class MainApplication(tk.Frame):
 
         # code here
 
-        """TODO Step 7: Save all new sheets to disk"""
+        """Step 7: Save all new sheets to disk"""
 
         self.logger.info("Saving sorted data to spreadsheet")
         self.data.to_excel(self.writer, sheet_name="ALL_RECORDS")
