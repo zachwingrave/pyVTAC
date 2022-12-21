@@ -16,7 +16,7 @@ PATHWAY = "Pathway Package"
 MOBILE_NO = "MOBILE_PHONE_NO"
 HOME_NO = "HOME_PHONE_NO"
 STREAM = "Stream"
-CAMPUS = "Campus"
+CAMPUS = "Community Services campus"
 PATHWAY = "Pathway Package"
 
 
@@ -139,7 +139,7 @@ class MainApplication(tk.Frame):
             by=[STUDENT_ID, COURSE_TITLE], ascending=[True, True]
         )  # ready for cleaning
 
-        """Step 1: Format mobile numbers"""
+        """Step 1: Format phone numbers to modified international format"""
 
         def parseNumber(
             number,
@@ -174,23 +174,18 @@ class MainApplication(tk.Frame):
             axis="columns",
         )
 
-        """Step 2: Dedupe entire list by Student ID (S1SSP_STU_SPK_STU_ID) and create sheet FIRST_CONTACT"""
-
-        self.logger.info(
-            "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
-        )
-        DF_FIRST_CONTACT = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID)
-        self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
-
-        """Step 3: Append "Stream" to "Course Title" - add Stream name in brackets after Course Title"""
+        """Step 2: Append 'Stream' to 'Course Title' in brackets"""
 
         DF_ALL_RECORDS[COURSE_TITLE] = (
-            DF_ALL_RECORDS[COURSE_TITLE] + " (" + DF_ALL_RECORDS[STREAM] + ")"
+            DF_ALL_RECORDS[COURSE_TITLE]
+            + " ("
+            + DF_ALL_RECORDS[STREAM].fillna(value="")
+            + ")"
         ).replace(
-            to_replace=" \(  \)", value="", regex=True
+            to_replace=" \(\)", value="", regex=True
         )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
 
-        """Step 4: Append "Campus" to "Course Title" """
+        """Step 3: Append 'Campus' to 'Course Title' """
 
         if CAMPUS in DF_ALL_RECORDS.columns:
             DF_ALL_RECORDS[COURSE_TITLE] = (
@@ -201,13 +196,21 @@ class MainApplication(tk.Frame):
                 to_replace=" - $", value="", regex=True
             )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
 
-        """TODO Step 5: Sort duplicate offers (i.e. packaged degrees) according to "Course Title" enum (e.g. "Diploma"=0, "Advanced Diploma"=1, "Bachelor"=2) and append higher course offer to lower course offer (lower first) - append with / THANK YOU TAYLOR!"""
+        """Step 4: Dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""
+
+        self.logger.info(
+            "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
+        )
+        DF_FIRST_CONTACT = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID)
+        self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
+
+        """TODO Step 5: Sort duplicate offers (i.e. packaged degrees) according to 'Course Title' enum (e.g. 'Diploma'=0, 'Advanced Diploma'=1, 'Bachelor'=2) and append higher course offer to lower course offer (lower first) - append with /"""
 
         # code here
 
-        """Step 6: Filter deduped list from Step 5 into individual sheets for "VC_SCHOLARSHIPS", "AVIATION", "HARD_PACKAGE", "SOFT_PACKAGE", "HARD_SINGLE", "SOFT_SINGLE" """
+        """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'AVIATION', 'HARD_PACKAGE', 'SOFT_PACKAGE', 'HARD_SINGLE', 'SOFT_SINGLE' """
 
-        DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Eligible"]
+        DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Yes"]
         DF_PACKAGE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == "Yes"]
         DF_SINGLE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] != "Yes"]
         # DF_AVIATION = DF_ALL_RECORDS  # TODO
