@@ -202,16 +202,14 @@ class MainApplication(tk.Frame):
         self.logger.info(
             "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
         )
-        DF_FIRST_CONTACT = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID)
+        DF_FIRST_CONTACT = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID, keep='first')
         self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
 
         """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'PACKAGE_OFFERS', 'SINGLE_OFFERS'"""
 
         DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Yes"]
         DF_PACKAGE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == "Y"]
-        DF_SINGLE_OFFERS = DF_ALL_RECORDS[
-            DF_ALL_RECORDS[PATHWAY] != "Y"
-        ]  # TODO: change to "== ''"
+        DF_SINGLE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == ""]
         # DF_AVIATION = DF_ALL_RECORDS  # TODO
         # DF_HARD_PACKAGE = DF_ALL_RECORDS  # TODO
         # DF_SOFT_PACKAGE = DF_ALL_RECORDS  # TODO
