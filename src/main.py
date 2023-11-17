@@ -11,6 +11,7 @@ import os
 
 VC_ELIGIBILITY = "VC Scholarship"
 COURSE_TITLE = "COURSE_TITLE"
+COURSE_SEQUENCE = "COURSE_SEQUENCE"
 STUDENT_ID = "S1SSP_STU_SPK_STU_ID"
 PATHWAY = "Package"
 MOBILE_NO = "MOBILE_PHONE_NO"
@@ -173,7 +174,7 @@ class MainApplication(tk.Frame):
             axis="columns",
         )
 
-        """Step 2: Append 'Stream' to 'Course Title' in brackets"""  # TODO: Not working 2023-10-12.
+        """Step 2: Append 'Stream' to 'Course Title' in brackets"""
 
         DF_ALL_RECORDS[COURSE_TITLE] = (
             DF_ALL_RECORDS[COURSE_TITLE].str.strip()
@@ -197,19 +198,47 @@ class MainApplication(tk.Frame):
                 to_replace=" - $", value="", regex=True
             )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
 
-        """Step 4: Split 'COURSE_TITLE' into 3 columns: 'Combined' ('COURSE_TITLE'), 'First Degree', 'Second Degree', then dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""  # TODO: create 3 columns: Combined (COURSE_TITLE), First Degree, Second Degree, according to the enum
+        """Step 4: Split 'COURSE_TITLE' into 3 columns: 'Combined' ('COURSE_TITLE'), 'First Degree', 'Second Degree', then dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""
+
+        def getRanking(course_title):
+            degrees = {
+                "Certificate III" : 1,
+                "Certificate IV" : 2,
+                "Diploma" : 3, # this will also pick up UniLink Diplomas
+                "Advanced Diploma" : 4,
+                "Associate Degree" : 5,
+                "Bachelor" : 6,
+                "Graduate Certificate" : 7,
+                "Master": 8
+            }
+            for degree in degrees.keys():
+                if degree in course_title:
+                    return degrees[degree]
+
+        DF_ALL_RECORDS[COURSE_SEQUENCE] = DF_ALL_RECORDS[COURSE_TITLE].apply(getRanking) # create new column for COURSE_SEQUENCE according to degrees dict
+        DF_ALL_RECORDS = DF_ALL_RECORDS.sort_values(by=[STUDENT_ID, COURSE_SEQUENCE], ascending=[True, True]).reset_index() # ensure courses are grouped and sorted
+
+        # this section possible with the Pandas.DataFrame.groupby function, and Pandas.DataFrame.merge
+
+        DF_GROUPBY = DF_ALL_RECORDS.groupby(STUDENT_ID, as_index=False)[COURSE_TITLE].apply('/'.join) # create new dataframe with merged course titles
+        DF_ALL_RECORDS = DF_ALL_RECORDS.merge(DF_GROUPBY, on=STUDENT_ID) # merge dataframe back, conflicts will create COURSE_TITLE_x and COURSE_TITLE_y
+
+        DF_ALL_RECORDS[COURSE_TITLE+"_x"] = DF_ALL_RECORDS[COURSE_TITLE+"_y"] # transpose combined course title from COURSE_TITLE_y
+        DF_ALL_RECORDS.rename({COURSE_TITLE+"_x" : COURSE_TITLE}) # drop the _x from original (now combined) COURSE_TITLE
+        DF_ALL_RECORDS.drop(COURSE_TITLE+"_y", axis=1, inplace=True) # drop the additional _y column, it's no longer needed
+        DF_ALL_RECORDS.drop("index", axis=1, inplace=True) # drop the original index column
 
         self.logger.info(
-            "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
+            "Deduping list based on STUDENT_ID, keeping first instance of each record"
         )
-        DF_FIRST_CONTACT = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID, keep='first')
-        self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
+        DF_ALL_RECORDS = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID, keep='first')
+        self.dataSummary(DF_ALL_RECORDS, "DF_ALL_RECORDS")
 
         """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'PACKAGE_OFFERS', 'SINGLE_OFFERS'"""
 
         DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Yes"]
         DF_PACKAGE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == "Y"]
-        DF_SINGLE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == ""]
+        DF_SINGLE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] != "Y"] # 2023-11-17 TODO: `PATHWAY == ""` not working
         # DF_AVIATION = DF_ALL_RECORDS  # TODO
         # DF_HARD_PACKAGE = DF_ALL_RECORDS  # TODO
         # DF_SOFT_PACKAGE = DF_ALL_RECORDS  # TODO
@@ -220,7 +249,7 @@ class MainApplication(tk.Frame):
 
         self.logger.info("Saving sorted data to spreadsheet")
         DF_ALL_RECORDS.to_excel(self.writer, sheet_name="ALL_RECORDS")
-        # DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT")
+        # DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT") # no longer needed
         DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
         DF_PACKAGE_OFFERS.to_excel(self.writer, sheet_name="PACKAGE_OFFERS")
         DF_SINGLE_OFFERS.to_excel(self.writer, sheet_name="SINGLE_OFFERS")
