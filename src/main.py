@@ -197,7 +197,7 @@ class MainApplication(tk.Frame):
                 to_replace=" - $", value="", regex=True
             )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
 
-        """Step 4: Split 'COURSE_TITLE' into 3 columns: 'Combined' ('COURse_TITLE'), 'First Degree', 'Second Degree', then dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""  # TODO: create 3 columns: Combined (COURSE_TITLE), First Degree, Second Degree, according to the enum
+        """Step 4: Split 'COURSE_TITLE' into 3 columns: 'Combined' ('COURSE_TITLE'), 'First Degree', 'Second Degree', then dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""  # TODO: create 3 columns: Combined (COURSE_TITLE), First Degree, Second Degree, according to the enum
 
         self.logger.info(
             "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
