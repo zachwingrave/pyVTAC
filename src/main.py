@@ -12,12 +12,11 @@ import os
 VC_ELIGIBILITY = "VC Scholarship"
 COURSE_TITLE = "COURSE_TITLE"
 STUDENT_ID = "S1SSP_STU_SPK_STU_ID"
-PATHWAY = "Pathway Package"
+PATHWAY = "Package"
 MOBILE_NO = "MOBILE_PHONE_NO"
 HOME_NO = "HOME_PHONE_NO"
 STREAM = "Stream"
-CAMPUS = "Community Services campus"
-PATHWAY = "Pathway Package"
+CAMPUS = "Campus"
 
 
 class MainApplication(tk.Frame):
@@ -174,12 +173,14 @@ class MainApplication(tk.Frame):
             axis="columns",
         )
 
-        """Step 2: Append 'Stream' to 'Course Title' in brackets"""
+        """Step 2: Append 'Stream' to 'Course Title' in brackets"""  # TODO: Not working 2023-10-12.
 
         DF_ALL_RECORDS[COURSE_TITLE] = (
-            DF_ALL_RECORDS[COURSE_TITLE]
+            DF_ALL_RECORDS[COURSE_TITLE].str.strip()
             + " ("
-            + DF_ALL_RECORDS[STREAM].fillna(value="")
+            + DF_ALL_RECORDS[STREAM].str.strip().fillna(
+                value=""
+            )  # Strip whitespace, ignore cells with only spaces
             + ")"
         ).replace(
             to_replace=" \(\)", value="", regex=True
@@ -196,7 +197,7 @@ class MainApplication(tk.Frame):
                 to_replace=" - $", value="", regex=True
             )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
 
-        """Step 4: Dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""
+        """Step 4: Split 'COURSE_TITLE' into 3 columns: 'Combined' ('COURse_TITLE'), 'First Degree', 'Second Degree', then dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""  # TODO: create 3 columns: Combined (COURSE_TITLE), First Degree, Second Degree, according to the enum
 
         self.logger.info(
             "Deduping list based on STUDENT_ID and creating sheet FIRST_CONTACT"
@@ -204,15 +205,13 @@ class MainApplication(tk.Frame):
         DF_FIRST_CONTACT = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID)
         self.dataSummary(DF_FIRST_CONTACT, "DF_FIRST_CONTACT")
 
-        """TODO Step 5: Sort duplicate offers (i.e. packaged degrees) according to 'Course Title' enum (e.g. 'Diploma'=0, 'Advanced Diploma'=1, 'Bachelor'=2) and append higher course offer to lower course offer (lower first) - append with /"""
-
-        # code here
-
-        """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'AVIATION', 'HARD_PACKAGE', 'SOFT_PACKAGE', 'HARD_SINGLE', 'SOFT_SINGLE' """
+        """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'PACKAGE_OFFERS', 'SINGLE_OFFERS'"""
 
         DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Yes"]
-        DF_PACKAGE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == "Yes"]
-        DF_SINGLE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] != "Yes"]
+        DF_PACKAGE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == "Y"]
+        DF_SINGLE_OFFERS = DF_ALL_RECORDS[
+            DF_ALL_RECORDS[PATHWAY] != "Y"
+        ]  # TODO: change to "== ''"
         # DF_AVIATION = DF_ALL_RECORDS  # TODO
         # DF_HARD_PACKAGE = DF_ALL_RECORDS  # TODO
         # DF_SOFT_PACKAGE = DF_ALL_RECORDS  # TODO
@@ -223,7 +222,7 @@ class MainApplication(tk.Frame):
 
         self.logger.info("Saving sorted data to spreadsheet")
         DF_ALL_RECORDS.to_excel(self.writer, sheet_name="ALL_RECORDS")
-        DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT")
+        # DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT")
         DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
         DF_PACKAGE_OFFERS.to_excel(self.writer, sheet_name="PACKAGE_OFFERS")
         DF_SINGLE_OFFERS.to_excel(self.writer, sheet_name="SINGLE_OFFERS")
@@ -236,7 +235,9 @@ class MainApplication(tk.Frame):
         self.logger.debug("Saving file to disk")
         self.writer.close()
 
-        self.btnSortData.configure(state="disabled")
+        self.btnSortData.configure(
+            text="Sort data", bootstyle=ttkc.SUCCESS, state="disabled"
+        )
         self.logger.debug("Data sort complete")
         self.openResults()
         self.btnOpenResults.configure(state="enabled")
