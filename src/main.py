@@ -121,6 +121,8 @@ class MainApplication(tk.Frame):
             "Total rows": len(data.index),
             "Total cols": len(data.columns),
         }
+        self.logger.debug("Column types:")
+        self.logger.debug(data.dtypes)
         if header:
             self.logger.debug("Data summary for " + header)
         else:
@@ -180,7 +182,7 @@ class MainApplication(tk.Frame):
             DF_ALL_RECORDS[COURSE_TITLE] = (
                 DF_ALL_RECORDS[COURSE_TITLE].str.strip()
                 + " ("
-                + DF_ALL_RECORDS[STREAM].str.strip().fillna(
+                + DF_ALL_RECORDS[STREAM].astype(str).str.strip().fillna( # '.astype(str)' added to avoid situation where STREAM column is not string type (possibly due to empty values?)
                     value=""
                 )  # Strip whitespace, ignore cells with only spaces
                 + ")"
