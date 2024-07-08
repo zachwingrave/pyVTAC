@@ -10,6 +10,7 @@ openpyxl>=3.0.10
 pandas>=1.5.2
 pathspec>=0.10.3
 pefile>=2022.5.30
+phonenumbers>=8.13.40
 Pillow>=10.0.1
 platformdirs>=2.6.0
 pyinstaller>=5.7.0
