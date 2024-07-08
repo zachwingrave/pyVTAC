@@ -94,7 +94,7 @@ class MainApplication(tk.Frame):
                     path=filename, mode="a", if_sheet_exists="replace"
                 )
                 self.data = pd.read_excel(io=filename, engine="openpyxl")
-            except (PermissionError) as e:
+            except PermissionError as e:
                 # self.logger.exception(e)
                 self.logger.error(
                     "Error: File open in another program. Close and try again."
@@ -136,7 +136,9 @@ class MainApplication(tk.Frame):
             self.logger.debug("Sorting data")
 
             self.dataSummary(self.data, "ALL RECORDS")  # Summarise initial data state
-            self.btnSortData.configure(text="Sorting in progress", bootstyle=ttkc.WARNING)
+            self.btnSortData.configure(
+                text="Sorting in progress", bootstyle=ttkc.WARNING
+            )
 
             DF_ALL_RECORDS = self.data.sort_values(
                 by=[STUDENT_ID, COURSE_TITLE], ascending=[True, True]
@@ -157,7 +159,7 @@ class MainApplication(tk.Frame):
                         .replace(" ", "")  # drop spaces in the middle of the number
                     )
                     return parsedNumber
-                except (phonenumbers.phonenumberutil.NumberParseException):
+                except phonenumbers.phonenumberutil.NumberParseException:
                     if number == "nan":  # replace NaN with empty string
                         return ""
                     else:
@@ -180,15 +182,24 @@ class MainApplication(tk.Frame):
             """Step 2: Append 'Stream' to 'Course Title' in brackets"""
 
             DF_ALL_RECORDS[COURSE_TITLE] = (
-                DF_ALL_RECORDS[COURSE_TITLE].str.strip()
-                + " ("
-                + DF_ALL_RECORDS[STREAM].astype(str).str.strip().fillna( # '.astype(str)' added to avoid situation where STREAM column is not string type (possibly due to empty values?)
-                    value=""
-                )  # Strip whitespace, ignore cells with only spaces
-                + ")"
-            ).replace(
-                to_replace=" \(\)", value="", regex=True
-            )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
+                (
+                    DF_ALL_RECORDS[COURSE_TITLE].str.strip()
+                    + " ("
+                    + DF_ALL_RECORDS[STREAM]
+                    .astype(str)
+                    .str.strip()
+                    .fillna(  # '.astype(str)' added to avoid situation where STREAM column is not string type (possibly due to empty values?)
+                        value=""
+                    )  # Strip whitespace, ignore cells with only spaces
+                    + ")"
+                )
+                .replace(
+                    to_replace="nan", value="", regex=True
+                )  # replace 'nan' from unknown source (TODO: fix) with empty string
+                .replace(
+                    to_replace=" \(\)", value="", regex=True
+                )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
+            )
 
             """Step 3: Append 'Campus' to 'Course Title' """
 
@@ -205,44 +216,70 @@ class MainApplication(tk.Frame):
 
             def getRanking(course_title):
                 degrees = {
-                    "Certificate III" : 1,
-                    "Certificate IV" : 2,
-                    "Diploma" : 3, # this will also pick up UniLink Diplomas
-                    "Advanced Diploma" : 4,
-                    "Associate Degree" : 5,
-                    "Bachelor" : 6,
-                    "Graduate Certificate" : 7,
-                    "Master": 8
+                    "Certificate III": 1,
+                    "Certificate IV": 2,
+                    "Diploma": 3,  # this will also pick up UniLink Diplomas
+                    "Advanced Diploma": 4,
+                    "Associate Degree": 5,
+                    "Bachelor": 6,
+                    "Graduate Certificate": 7,
+                    "Master": 8,
                 }
                 for degree in degrees.keys():
                     if degree in course_title:
                         return degrees[degree]
 
-            DF_ALL_RECORDS[COURSE_SEQUENCE] = DF_ALL_RECORDS[COURSE_TITLE].apply(getRanking) # create new column for COURSE_SEQUENCE according to degrees dict
-            DF_ALL_RECORDS = DF_ALL_RECORDS.sort_values(by=[STUDENT_ID, COURSE_SEQUENCE], ascending=[True, True]).reset_index() # ensure courses are grouped and sorted
+            DF_ALL_RECORDS[COURSE_SEQUENCE] = DF_ALL_RECORDS[COURSE_TITLE].apply(
+                getRanking
+            )  # create new column for COURSE_SEQUENCE according to degrees dict
+            DF_ALL_RECORDS = DF_ALL_RECORDS.sort_values(
+                by=[STUDENT_ID, COURSE_SEQUENCE], ascending=[True, True]
+            ).reset_index()  # ensure courses are grouped and sorted
 
             # this section possible with the Pandas.DataFrame.groupby function, and Pandas.DataFrame.merge
 
-            DF_GROUPBY = DF_ALL_RECORDS.groupby(STUDENT_ID, as_index=False)[COURSE_TITLE].apply('/'.join) # create new dataframe with merged course titles
-            DF_ALL_RECORDS = DF_ALL_RECORDS.merge(DF_GROUPBY, on=STUDENT_ID) # merge dataframe back, conflicts will create COURSE_TITLE_x and COURSE_TITLE_y
+            DF_GROUPBY = DF_ALL_RECORDS.groupby(STUDENT_ID, as_index=False)[
+                COURSE_TITLE
+            ].apply(
+                "/".join
+            )  # create new dataframe with merged course titles
+            DF_ALL_RECORDS = DF_ALL_RECORDS.merge(
+                DF_GROUPBY, on=STUDENT_ID
+            )  # merge dataframe back, conflicts will create COURSE_TITLE_x and COURSE_TITLE_y
 
-            DF_ALL_RECORDS[COURSE_TITLE+"_x"] = DF_ALL_RECORDS[COURSE_TITLE+"_y"] # transpose combined course title from COURSE_TITLE_y
-            DF_ALL_RECORDS.rename({COURSE_TITLE+"_x" : COURSE_TITLE}) # drop the _x from original (now combined) COURSE_TITLE
-            DF_ALL_RECORDS.drop(COURSE_TITLE+"_y", axis=1, inplace=True) # drop the additional _y column, it's no longer needed
-            DF_ALL_RECORDS.drop("COURSE_SEQUENCE", axis=1, inplace=True) # drop the custom course sequence value
-            DF_ALL_RECORDS.drop("index", axis=1, inplace=True) # drop the original index column
+            DF_ALL_RECORDS[COURSE_TITLE + "_x"] = DF_ALL_RECORDS[
+                COURSE_TITLE + "_y"
+            ]  # transpose combined course title from COURSE_TITLE_y
+            DF_ALL_RECORDS.rename(
+                {COURSE_TITLE + "_x": COURSE_TITLE}
+            )  # drop the _x from original (now combined) COURSE_TITLE
+            DF_ALL_RECORDS.drop(
+                COURSE_TITLE + "_y", axis=1, inplace=True
+            )  # drop the additional _y column, it's no longer needed
+            DF_ALL_RECORDS.drop(
+                "COURSE_SEQUENCE", axis=1, inplace=True
+            )  # drop the custom course sequence value
+            DF_ALL_RECORDS.drop(
+                "index", axis=1, inplace=True
+            )  # drop the original index column
 
             self.logger.info(
                 "Deduping list based on STUDENT_ID, keeping first instance of each record"
             )
-            DF_ALL_RECORDS = DF_ALL_RECORDS.drop_duplicates(subset=STUDENT_ID, keep='first')
+            DF_ALL_RECORDS = DF_ALL_RECORDS.drop_duplicates(
+                subset=STUDENT_ID, keep="first"
+            )
             self.dataSummary(DF_ALL_RECORDS, "DF_ALL_RECORDS")
 
             """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'PACKAGE_OFFERS', 'SINGLE_OFFERS'"""
 
             DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Yes"]
-            DF_PACKAGE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] == "Yes"] # Updated 2023-11-17
-            DF_SINGLE_OFFERS = DF_ALL_RECORDS[DF_ALL_RECORDS[PATHWAY] != "Yes"] # 2023-11-17 TODO: `PATHWAY == ""` not working
+            DF_PACKAGE_OFFERS = DF_ALL_RECORDS[
+                DF_ALL_RECORDS[PATHWAY] == "Yes"
+            ]  # Updated 2023-11-17
+            DF_SINGLE_OFFERS = DF_ALL_RECORDS[
+                DF_ALL_RECORDS[PATHWAY] != "Yes"
+            ]  # 2023-11-17 TODO: `PATHWAY == ""` not working
             # DF_AVIATION = DF_ALL_RECORDS  # TODO
             # DF_HARD_PACKAGE = DF_ALL_RECORDS  # TODO
             # DF_SOFT_PACKAGE = DF_ALL_RECORDS  # TODO
@@ -278,7 +315,8 @@ class MainApplication(tk.Frame):
 
 class TextHandler(logging.Handler):
     """This class allows you to log to a Tkinter Text or ScrolledText widget
-    Adapted from /u/johan: https://stackoverflow.com/questions/13318742/python-logging-to-tkinter-text-widget"""
+    Adapted from /u/johan: https://stackoverflow.com/questions/13318742/python-logging-to-tkinter-text-widget
+    """
 
     def __init__(self, loggingWidget):
         logging.Handler.__init__(self)
