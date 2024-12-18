@@ -165,6 +165,11 @@ class MainApplication(tk.Frame):
                     else:
                         return number
 
+            def parseNumberReverse(
+                number,
+            ):  # use reverse method to format phone numbers to AU
+                pass
+
             DF_ALL_RECORDS[MOBILE_NO] = DF_ALL_RECORDS.apply(
                 lambda x: parseNumber(
                     str(x[MOBILE_NO])
