@@ -9,15 +9,15 @@ import logging
 import os
 
 
-VC_ELIGIBILITY = "VC Scholarship"
-COURSE_TITLE = "Course_Title"
+VC_ELIGIBILITY = "VC SCHOLARSHIP"
+COURSE_TITLE = "COURSE_TITLE"
 COURSE_SEQUENCE = "COURSE_SEQUENCE"
 STUDENT_ID = "S1SSP_STU_SPK_STU_ID"
-PATHWAY = "Package"
+PATHWAY = "PACKAGE"
 MOBILE_NO = "MOBILE_PHONE_NO"
 HOME_NO = "HOME_PHONE_NO"
-STREAM = "Stream"
-CAMPUS = "Campus"
+STREAM = "STREAM"
+CAMPUS = "CAMPUS"
 
 
 class MainApplication(tk.Frame):
@@ -202,7 +202,7 @@ class MainApplication(tk.Frame):
                     to_replace="nan", value="", regex=True
                 )  # replace 'nan' from unknown source (TODO: fix) with empty string
                 .replace(
-                    to_replace=" \(\)", value="", regex=True
+                    to_replace=" ()", value="", regex=True
                 )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
             )
 
