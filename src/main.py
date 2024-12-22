@@ -331,11 +331,12 @@ class MainApplication(tk.Frame):
             """Step 7: Save all new sheets to disk"""
 
             self.logger.info("Saving sorted data to spreadsheet")
+
             DF_ALL_RECORDS.to_excel(self.writer, sheet_name="ALL_RECORDS")
-            # DF_FIRST_CONTACT.to_excel(self.writer, sheet_name="FIRST_CONTACT") # no longer needed
             DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
             DF_PACKAGE_OFFERS.to_excel(self.writer, sheet_name="PACKAGE_OFFERS")
             DF_SINGLE_OFFERS.to_excel(self.writer, sheet_name="SINGLE_OFFERS")
+
             # DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
             # DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
             # DF_SOFT_PACKAGE.to_excel(self.writer, sheet_name="SOFT_PACKAGE")
