@@ -288,7 +288,7 @@ class MainApplication(tk.Frame):
                 COURSE_TITLE + "_y"
             ]  # transpose combined course title from COURSE_TITLE_y
             DF_ALL_RECORDS.rename(
-                {COURSE_TITLE + "_x": COURSE_TITLE}
+                columns={COURSE_TITLE + "_x": COURSE_TITLE}, inplace=True
             )  # drop the _x from original (now combined) COURSE_TITLE
             DF_ALL_RECORDS.drop(
                 COURSE_TITLE + "_y", axis=1, inplace=True
