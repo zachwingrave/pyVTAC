@@ -1,13 +1,6 @@
-import tkinter as tk
-import tkinter.filedialog as tkfd
-import tkinter.scrolledtext as tkst
-import ttkbootstrap as ttk
-import ttkbootstrap.constants as ttkc
 import pandas as pd
-import phonenumbers
 import logging
 import os
-
 
 VC_ELIGIBILITY = "VC SCHOLARSHIP"  # Must be in AFFIRMATIVE
 COURSE_TITLE = "COURSE_TITLE"
@@ -21,102 +14,59 @@ STREAM = "STREAM"
 CAMPUS = "CAMPUS"
 
 AFFIRMATIVE = ["Y", "YES", "TRUE"]
-# NEGATIVE = ["N", "NO", "FALSE"]  # Unused
 
 
-class MainApplication(tk.Frame):
-    def __init__(self, parent, *args, **kwargs):
-        tk.Frame.__init__(self, parent, *args, **kwargs)
-        self.parent = parent
+class MainApplication:
+    def __init__(self):
         self.writer = None
         self.data = None
 
-        self.btnOpenFile = ttk.Button(
-            self,
-            text="Open file",
-            bootstyle=ttkc.PRIMARY,
-            command=self.browseFiles,
-            state="enabled",
-        )
-        self.btnOpenFile.pack(side=ttkc.LEFT, padx=5, pady=10)
-
-        self.btnSortData = ttk.Button(
-            self,
-            text="Sort data",
-            bootstyle=ttkc.SUCCESS,
-            command=self.sortData,
-            state="disabled",
-        )
-        self.btnSortData.pack(side=ttkc.LEFT, padx=5, pady=10)
-
-        self.btnOpenResults = ttk.Button(
-            self,
-            text="Open results",
-            bootstyle=ttkc.INFO,
-            command=self.openResults,
-            state="disabled",
-        )
-        self.btnOpenResults.pack(side=ttkc.LEFT, padx=5, pady=10)
-
-        self.btnQuit = ttk.Button(
-            self,
-            text="Quit",
-            bootstyle=ttkc.DANGER,
-            command=self.quit,
-            state="enabled",
-        )
-        self.btnQuit.pack(side=ttkc.LEFT, padx=5, pady=10)
-
-        self.stLogger = tkst.ScrolledText(self, state="disabled")
-        handler = TextHandler(self.stLogger)
+        handler = LogHandler(path="log/app.log")
         self.logger = logging.getLogger()
         self.logger.addHandler(handler)
-        self.stLogger.pack(side=ttkc.BOTTOM, padx=5, pady=10)
 
         self.logger.info("Main application window initialised")
 
-        # <create the rest of your GUI here>
+    # def browseFiles(self):  # TODO: Needs QT update
+    #     self.logger.debug("File dialog window opened")
 
-    def browseFiles(self):
-        self.logger.debug("File dialog window opened")
+    #     filename = tkfd.askopenfilename(
+    #         initialdir="~/Downloads",
+    #         title="Select data source",
+    #         filetypes=(
+    #             ("Excel files", "*.xlsx *.xls"),
+    #             ("Comma separated", "*.csv"),
+    #             ("All files", "*.*"),
+    #         ),
+    #     )  # TODO: Needs QT update
 
-        filename = tkfd.askopenfilename(
-            initialdir="~/Downloads",
-            title="Select data source",
-            filetypes=(
-                ("Excel files", "*.xlsx *.xls"),
-                ("Comma separated", "*.csv"),
-                ("All files", "*.*"),
-            ),
-        )
+    #     if filename != "":
+    #         try:
+    #             self.logger.info("File Opened: " + filename)
+    #             self.btnSortData.configure(state="enabled")
+    #             self.writer = pd.ExcelWriter(
+    #                 path=filename, mode="a", if_sheet_exists="replace"
+    #             )
+    #             self.data = pd.read_excel(io=filename, engine="openpyxl")
+    #         except PermissionError as e:
+    #             self.logger.error(
+    #                 "Error: File open in another program. Close and try again."
+    #             )
+    #             self.btnSortData.configure(state="disabled")
+    #             self.btnOpenResults.configure(state="disabled")
+    #             self.writer = None
+    #             self.data = None
+    #         except Exception as e:
+    #             self.logger.exception(e)
 
-        if filename != "":
-            try:
-                self.logger.info("File Opened: " + filename)
-                self.btnSortData.configure(state="enabled")
-                self.writer = pd.ExcelWriter(
-                    path=filename, mode="a", if_sheet_exists="replace"
-                )
-                self.data = pd.read_excel(io=filename, engine="openpyxl")
-            except PermissionError as e:
-                self.logger.error(
-                    "Error: File open in another program. Close and try again."
-                )
-                self.btnSortData.configure(state="disabled")
-                self.btnOpenResults.configure(state="disabled")
-                self.writer = None
-                self.data = None
-            except Exception as e:
-                self.logger.exception(e)
+    #     else:
+    #         self.logger.info("No file selected")
+    #         self.btnSortData.configure(state="disabled")
+    #         self.btnOpenResults.configure(state="disabled")
+    #         self.writer = None
+    #         self.data = None
 
-        else:
-            self.logger.info("No file selected")
-            self.btnSortData.configure(state="disabled")
-            self.btnOpenResults.configure(state="disabled")
-            self.writer = None
-            self.data = None
-
-        self.logger.debug("File dialog window closed")
+    #     self.logger.debug("File dialog window closed")
 
     def openResults(self):
         self.logger.info("Opening results file")
@@ -167,34 +117,15 @@ class MainApplication(tk.Frame):
             self.logger.debug("Sorting data")
 
             self.dataSummary(self.data, "ALL RECORDS")  # Summarise initial data state
-            self.btnSortData.configure(
-                text="Sorting in progress", bootstyle=ttkc.WARNING
-            )
+            # self.btnSortData.configure(
+            #     text="Sorting in progress", bootstyle=ttkc.WARNING
+            # ) # TODO: Needs QT update
 
             DF_ALL_RECORDS = self.data.sort_values(
                 by=[STUDENT_ID, COURSE_TITLE], ascending=[True, True]
             )  # ready for cleaning
 
             """Step 1: Format phone numbers to modified international format"""
-
-            def parseNumber(  # TODO: Fix
-                number,
-            ):  # use 'phonenumbers' module to format phone numbers to AU
-                try:
-                    parsedNumber = (
-                        phonenumbers.format_number(
-                            phonenumbers.parse(number, "AU"),
-                            phonenumbers.PhoneNumberFormat.INTERNATIONAL,  # leads with international calling code, +61
-                        )
-                        .replace("+", "")  # drop the leading +
-                        .replace(" ", "")  # drop spaces in the middle of the number
-                    )
-                    return parsedNumber
-                except phonenumbers.phonenumberutil.NumberParseException:
-                    if number == "nan":  # replace NaN with empty string
-                        return ""
-                    else:
-                        return number
 
             def parseNumberReverse(  # TODO
                 number,
@@ -406,9 +337,10 @@ class MainApplication(tk.Frame):
             self.logger.debug("Saving file to disk")
             self.writer.close()
 
-            self.btnSortData.configure(
-                text="Sort data", bootstyle=ttkc.SUCCESS, state="disabled"
-            )
+            # self.btnSortData.configure(
+            #     text="Sort data", bootstyle=ttkc.SUCCESS, state="disabled"
+            # ) # TODO: Needs QT update
+
             self.logger.debug("Data sort complete")
             self.openResults()
             self.btnOpenResults.configure(state="enabled")
@@ -416,37 +348,29 @@ class MainApplication(tk.Frame):
             self.logger.exception(e)
 
 
-class TextHandler(logging.Handler):
-    """This class allows you to log to a Tkinter Text or ScrolledText widget
-    Adapted from /u/johan: https://stackoverflow.com/questions/13318742/python-logging-to-tkinter-text-widget
-    """
-
-    def __init__(self, loggingWidget):
+class LogHandler(logging.FileHandler):
+    def __init__(self, path):
         logging.Handler.__init__(self)
 
         logging.basicConfig(
-            # filename="log/app.log",
+            filename=path,
             format="%(asctime)s %(levelname)-4s %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
             level=logging.DEBUG,
         )
 
-        self.log = loggingWidget
+        self.mode = "a"
         self.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
             fmt="%(asctime)s %(levelname)-4s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
         self.setFormatter(formatter)
 
-    def emit(self, record):
-        msg = self.format(record)
-        self.log.configure(state="normal")
-        self.log.insert(ttk.END, msg + "\n")
-        self.log.configure(state="disabled")
-
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    root.wm_title("pyVTAC")
-    MainApplication(root).pack(side="top", fill="both", expand=True)
-    root.mainloop()
+    # root = tk.Tk()
+    # root.wm_title("pyVTAC")
+    # MainApplication(root).pack(side="top", fill="both", expand=True)
+    # root.mainloop()
+
+    app = MainApplication()
