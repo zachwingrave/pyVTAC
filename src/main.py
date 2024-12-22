@@ -177,7 +177,7 @@ class MainApplication(tk.Frame):
 
             """Step 1: Format phone numbers to modified international format"""
 
-            def parseNumber(
+            def parseNumber(  # TODO: Fix
                 number,
             ):  # use 'phonenumbers' module to format phone numbers to AU
                 try:
@@ -199,19 +199,24 @@ class MainApplication(tk.Frame):
             def parseNumberReverse(  # TODO
                 number,
             ):  # use reverse method to format phone numbers to AU
-                pass
+                number = (
+                    str(number).replace("+", "").replace(" ", "")
+                )  # drop the leading + and spaces in the middle of the number
+                number = number[-9:]  # string slicing for last 9 characters
+                number = "61" + number  # add leading 61
+                return number
 
             DF_ALL_RECORDS[MOBILE_NO] = DF_ALL_RECORDS.apply(
-                lambda x: parseNumber(
+                lambda x: parseNumberReverse(
                     str(x[MOBILE_NO])
-                ),  # apply the 'parseNumber' callback function to all row values in the MOBILE_NO column
+                ),  # apply the 'parseNumberReverse' callback function to all row values in the MOBILE_NO column
                 axis="columns",
             )  # format mobile phone numbers to AU international format
 
             DF_ALL_RECORDS[HOME_NO] = DF_ALL_RECORDS.apply(
-                lambda x: parseNumber(
+                lambda x: parseNumberReverse(
                     str(x[HOME_NO])
-                ),  # apply the 'parseNumber' callback function to all row values in the HOME_NO column
+                ),  # apply the 'parseNumberReverse' callback function to all row values in the HOME_NO column
                 axis="columns",
             )  # format home phone numbers to AU international format
 
