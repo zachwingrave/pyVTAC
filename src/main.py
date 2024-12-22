@@ -11,7 +11,8 @@ import os
 
 VC_ELIGIBILITY = "VC SCHOLARSHIP"  # Must be in AFFIRMATIVE
 COURSE_TITLE = "COURSE_TITLE"
-COURSE_SEQUENCE = "COURSE_SEQUENCE"
+COURSE_SEQUENCE = "COURSE_SEQUENCE"  # New column
+COUNTED_AS = "COUNTED_AS"  # New column
 STUDENT_ID = "S1SSP_STU_SPK_STU_ID"
 PATHWAY = "PACKAGE"  # Must be in AFFIRMATIVE
 MOBILE_NO = "MOBILE_PHONE_NO"
@@ -20,7 +21,7 @@ STREAM = "STREAM"
 CAMPUS = "CAMPUS"
 
 AFFIRMATIVE = ["Y", "YES", "TRUE"]
-NEGATIVE = ["N", "NO", "FALSE"]
+# NEGATIVE = ["N", "NO", "FALSE"]  # Unused
 
 
 class MainApplication(tk.Frame):
@@ -126,8 +127,8 @@ class MainApplication(tk.Frame):
             "Total rows": len(data.index),
             "Total cols": len(data.columns),
         }
-        self.logger.debug("Column types:")
-        self.logger.debug(data.dtypes)
+        # self.logger.debug("Column types:")
+        # self.logger.debug(data.dtypes)
         if header:
             self.logger.debug("Data summary for " + header)
         else:
@@ -294,9 +295,6 @@ class MainApplication(tk.Frame):
                 COURSE_TITLE + "_y", axis=1, inplace=True
             )  # drop the additional _y column, it's no longer needed
             DF_ALL_RECORDS.drop(
-                "COURSE_SEQUENCE", axis=1, inplace=True
-            )  # drop the custom course sequence value
-            DF_ALL_RECORDS.drop(
                 "index", axis=1, inplace=True
             )  # drop the original index column
 
@@ -308,7 +306,63 @@ class MainApplication(tk.Frame):
             )
             self.dataSummary(DF_ALL_RECORDS, "DF_ALL_RECORDS")
 
-            """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'PACKAGE_OFFERS', 'SINGLE_OFFERS'"""
+            """Step 5: Count offers by study area, according to COURSE_SEQUENCE e.g.
+
+            STUDY LEVEL                             COUNT
+            Higher Education (excluding UniLink)    196
+            UniLink                                 9
+            Vocational Education                    53
+            Total unique                            258
+
+            """
+
+            HE_COUNT = DF_ALL_RECORDS[DF_ALL_RECORDS[COURSE_SEQUENCE] >= 6].shape[0]
+            UNILINK_COUNT = DF_ALL_RECORDS[
+                DF_ALL_RECORDS[COURSE_TITLE].str.upper().str.contains("UNILINK")
+            ].shape[
+                0
+            ]  # Get number of rows where COURSE_TITLE contains "UNILINK"
+            VE_COUNT = (
+                DF_ALL_RECORDS[DF_ALL_RECORDS[COURSE_SEQUENCE] < 6].shape[0]
+                - UNILINK_COUNT
+            )
+            TOTAL_COUNT = HE_COUNT + UNILINK_COUNT + VE_COUNT
+            TOTAL_ROWS = DF_ALL_RECORDS.shape[0]
+
+            DF_COUNTS = pd.DataFrame(
+                {
+                    "Study Level": [
+                        "Higher Education (excluding UniLink)",
+                        "UniLink",
+                        "Vocational Education (excluding UniLink)",
+                        "Total unique",
+                        "CHECK TOTAL ROWS",
+                    ],
+                    "Count": [
+                        HE_COUNT,
+                        UNILINK_COUNT,
+                        VE_COUNT,
+                        TOTAL_COUNT,
+                        TOTAL_ROWS,
+                    ],
+                }
+            )  # create new DataFrame for counts to be added in Step 7
+
+            def countedAs(course_title):
+                if "UNILINK" in course_title.upper():
+                    return "UNILINK"
+                else:
+                    course_sequence = getRanking(course_title)
+                    if course_sequence >= 6:
+                        return "HIGHER EDUCATION (EXCLUDING UNILINK)"
+                    else:
+                        return "VOCATIONAL EDUCATION (EXCLUDING UNILINK)"
+
+            DF_ALL_RECORDS[COUNTED_AS] = DF_ALL_RECORDS[COURSE_TITLE].apply(
+                countedAs
+            )  # create new column for COUNTED_AS according to degrees dict
+
+            """Step 6: Filter deduped list from Step 4 into individual sheets for 'VC_SCHOLARSHIPS', 'PACKAGE_OFFERS', 'SINGLE_OFFERS'"""
 
             DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[
                 DF_ALL_RECORDS[VC_ELIGIBILITY].isin(AFFIRMATIVE)
@@ -336,6 +390,7 @@ class MainApplication(tk.Frame):
             DF_VC_SCHOLARSHIP.to_excel(self.writer, sheet_name="VC_SCHOLARSHIP")
             DF_PACKAGE_OFFERS.to_excel(self.writer, sheet_name="PACKAGE_OFFERS")
             DF_SINGLE_OFFERS.to_excel(self.writer, sheet_name="SINGLE_OFFERS")
+            DF_COUNTS.to_excel(self.writer, sheet_name="COUNTS")
 
             # DF_AVIATION.to_excel(self.writer, sheet_name="AVIATION")
             # DF_HARD_PACKAGE.to_excel(self.writer, sheet_name="HARD_PACKAGE")
