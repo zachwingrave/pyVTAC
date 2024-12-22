@@ -140,6 +140,12 @@ class MainApplication(tk.Frame):
         try:
             self.logger.debug("Cleaning data")
 
+            # Replace NA and NaN with "" for all String columns
+            for series in self.data:
+                if self.data[series].dtype == "object":
+                    self.data[series] = self.data[series].fillna(value="")
+                    self.data[series] = self.data[series].apply(str.strip)
+
             # Convert dtype of each column to most appropriate dtype
             self.data = self.data.convert_dtypes()
 
@@ -149,12 +155,6 @@ class MainApplication(tk.Frame):
             # Convert VC_ELIGIBILITY and PATHWAY values to UPPER_CASE
             self.data[VC_ELIGIBILITY] = self.data[VC_ELIGIBILITY].str.upper()
             self.data[PATHWAY] = self.data[PATHWAY].str.upper()
-
-            # Replace NA and NaN with "" for all String columns
-            for series in self.data:
-                if self.data[series].dtype == "str":
-                    self.data[series].fillna(value="", inplace=True)
-                    self.data[series] = self.data[series].apply(str.strip)
 
         except Exception as e:
             self.logger.exception(e)
@@ -205,47 +205,52 @@ class MainApplication(tk.Frame):
                     str(x[MOBILE_NO])
                 ),  # apply the 'parseNumber' callback function to all row values in the MOBILE_NO column
                 axis="columns",
-            )
+            )  # format mobile phone numbers to AU international format
 
             DF_ALL_RECORDS[HOME_NO] = DF_ALL_RECORDS.apply(
                 lambda x: parseNumber(
                     str(x[HOME_NO])
                 ),  # apply the 'parseNumber' callback function to all row values in the HOME_NO column
                 axis="columns",
-            )
+            )  # format home phone numbers to AU international format
 
             """Step 2: Append 'Stream' to 'Course Title' in brackets"""
 
+            def bracketStream(stream):
+                if stream != "":
+                    stream = " (" + stream + ")"
+                return stream
+
+            DF_ALL_RECORDS[STREAM] = DF_ALL_RECORDS.apply(
+                lambda x: bracketStream(
+                    str(x[STREAM])
+                ),  # apply the 'bracketStream' callback function to all row values in the STREAM column
+                axis="columns",
+            )  # apply brackets to non-empty Stream values
+
             DF_ALL_RECORDS[COURSE_TITLE] = (
-                (
-                    DF_ALL_RECORDS[COURSE_TITLE].str.strip()
-                    + " ("
-                    + DF_ALL_RECORDS[STREAM].astype(str).str.strip()
-                    # .fillna(  # '.astype(str)' added to avoid situation where STREAM column is not string type (possibly due to empty values?)
-                    #     value=""
-                    # )  # Strip whitespace, ignore cells with only spaces
-                    + ")"
-                )
-                .replace(
-                    to_replace="nan", value="", regex=True
-                )  # replace 'nan' from unknown source (TODO: fix) with empty string
-                .replace(
-                    to_replace=" ()", value="", regex=True
-                )  # replace empty brackets resulting from empty STREAM field using a regular expression. Tested with https://regex101.com/
+                DF_ALL_RECORDS[COURSE_TITLE] + DF_ALL_RECORDS[STREAM]
             )
 
             """Step 3: Append 'Campus' to 'Course Title' """
 
-            if CAMPUS in DF_ALL_RECORDS.columns:
-                DF_ALL_RECORDS[COURSE_TITLE] = (
-                    DF_ALL_RECORDS[COURSE_TITLE]
-                    + " - "
-                    # + DF_ALL_RECORDS[CAMPUS].fillna("")  # replace NaN with empty string
-                ).replace(
-                    to_replace=" - $", value="", regex=True
-                )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
+            def dashCampus(campus):
+                if campus != "":
+                    campus = " - " + campus
+                return campus
 
-            """Step 4: Split 'COURSE_TITLE' into 3 columns: 'Combined' ('COURSE_TITLE'), 'First Degree', 'Second Degree', then dedupe entire list by 'Student ID' (S1SSP_STU_SPK_STU_ID)"""
+            DF_ALL_RECORDS[CAMPUS] = DF_ALL_RECORDS.apply(
+                lambda x: dashCampus(
+                    x[CAMPUS]
+                ),  # apply the 'dashCampus' callback function to all row values in the CAMPUS column
+                axis="columns",
+            )  # apply dashes to non-empty Campus values
+
+            DF_ALL_RECORDS[COURSE_TITLE] = (
+                DF_ALL_RECORDS[COURSE_TITLE] + DF_ALL_RECORDS[CAMPUS]
+            )
+
+            """Step 4: Split 'COURSE_TITLE' into 3 columns: 'Combined' ('COURSE_TITLE'), 'First Degree', 'Second Degree', then dedupe entire list by 'Student ID'"""
 
             def getRanking(course_title):
                 degrees = {
