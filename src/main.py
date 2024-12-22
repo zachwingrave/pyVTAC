@@ -9,15 +9,18 @@ import logging
 import os
 
 
-VC_ELIGIBILITY = "VC SCHOLARSHIP"
+VC_ELIGIBILITY = "VC SCHOLARSHIP"  # Must be in AFFIRMATIVE
 COURSE_TITLE = "COURSE_TITLE"
 COURSE_SEQUENCE = "COURSE_SEQUENCE"
 STUDENT_ID = "S1SSP_STU_SPK_STU_ID"
-PATHWAY = "PACKAGE"
+PATHWAY = "PACKAGE"  # Must be in AFFIRMATIVE
 MOBILE_NO = "MOBILE_PHONE_NO"
 HOME_NO = "HOME_PHONE_NO"
 STREAM = "STREAM"
 CAMPUS = "CAMPUS"
+
+AFFIRMATIVE = ["Y", "YES", "TRUE"]
+NEGATIVE = ["N", "NO", "FALSE"]
 
 
 class MainApplication(tk.Frame):
@@ -95,7 +98,6 @@ class MainApplication(tk.Frame):
                 )
                 self.data = pd.read_excel(io=filename, engine="openpyxl")
             except PermissionError as e:
-                # self.logger.exception(e)
                 self.logger.error(
                     "Error: File open in another program. Close and try again."
                 )
@@ -103,6 +105,9 @@ class MainApplication(tk.Frame):
                 self.btnOpenResults.configure(state="disabled")
                 self.writer = None
                 self.data = None
+            except Exception as e:
+                self.logger.exception(e)
+
         else:
             self.logger.info("No file selected")
             self.btnSortData.configure(state="disabled")
@@ -131,8 +136,33 @@ class MainApplication(tk.Frame):
         for key in dataSummary:
             self.logger.debug(header + " " + key + ": " + str(dataSummary[key]))
 
+    def cleanData(self):
+        try:
+            self.logger.debug("Cleaning data")
+
+            # Convert dtype of each column to most appropriate dtype
+            self.data = self.data.convert_dtypes()
+
+            # Strip and rename each column header to UPPER_CASE
+            self.data.columns = self.data.columns.str.strip().str.upper()
+
+            # Convert VC_ELIGIBILITY and PATHWAY values to UPPER_CASE
+            self.data[VC_ELIGIBILITY] = self.data[VC_ELIGIBILITY].str.upper()
+            self.data[PATHWAY] = self.data[PATHWAY].str.upper()
+
+            # Replace NA and NaN with "" for all String columns
+            for series in self.data:
+                if self.data[series].dtype == "str":
+                    self.data[series].fillna(value="", inplace=True)
+                    self.data[series] = self.data[series].apply(str.strip)
+
+        except Exception as e:
+            self.logger.exception(e)
+
     def sortData(self):
         try:
+            self.cleanData()
+
             self.logger.debug("Sorting data")
 
             self.dataSummary(self.data, "ALL RECORDS")  # Summarise initial data state
@@ -190,12 +220,10 @@ class MainApplication(tk.Frame):
                 (
                     DF_ALL_RECORDS[COURSE_TITLE].str.strip()
                     + " ("
-                    + DF_ALL_RECORDS[STREAM]
-                    .astype(str)
-                    .str.strip()
-                    .fillna(  # '.astype(str)' added to avoid situation where STREAM column is not string type (possibly due to empty values?)
-                        value=""
-                    )  # Strip whitespace, ignore cells with only spaces
+                    + DF_ALL_RECORDS[STREAM].astype(str).str.strip()
+                    # .fillna(  # '.astype(str)' added to avoid situation where STREAM column is not string type (possibly due to empty values?)
+                    #     value=""
+                    # )  # Strip whitespace, ignore cells with only spaces
                     + ")"
                 )
                 .replace(
@@ -212,7 +240,7 @@ class MainApplication(tk.Frame):
                 DF_ALL_RECORDS[COURSE_TITLE] = (
                     DF_ALL_RECORDS[COURSE_TITLE]
                     + " - "
-                    + DF_ALL_RECORDS[CAMPUS].fillna("")  # replace NaN with empty string
+                    # + DF_ALL_RECORDS[CAMPUS].fillna("")  # replace NaN with empty string
                 ).replace(
                     to_replace=" - $", value="", regex=True
                 )  # replace dangling ' - ' resulting from empty CAMPUS field using a regular expression. Tested with https://regex101.com/
@@ -241,8 +269,7 @@ class MainApplication(tk.Frame):
                 by=[STUDENT_ID, COURSE_SEQUENCE], ascending=[True, True]
             ).reset_index()  # ensure courses are grouped and sorted
 
-            # this section possible with the Pandas.DataFrame.groupby function, and Pandas.DataFrame.merge
-
+            # This section possible with the Pandas.DataFrame.groupby function, and Pandas.DataFrame.merge
             DF_GROUPBY = DF_ALL_RECORDS.groupby(STUDENT_ID, as_index=False)[
                 COURSE_TITLE
             ].apply(
@@ -278,13 +305,18 @@ class MainApplication(tk.Frame):
 
             """Step 6: Filter deduped list from Step 5 into individual sheets for 'VC_SCHOLARSHIPS', 'PACKAGE_OFFERS', 'SINGLE_OFFERS'"""
 
-            DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[DF_ALL_RECORDS[VC_ELIGIBILITY] == "Yes"]
+            DF_VC_SCHOLARSHIP = DF_ALL_RECORDS[
+                DF_ALL_RECORDS[VC_ELIGIBILITY].isin(AFFIRMATIVE)
+            ]  # 1
             DF_PACKAGE_OFFERS = DF_ALL_RECORDS[
-                DF_ALL_RECORDS[PATHWAY] == "Yes"
-            ]  # Updated 2023-11-17
+                DF_ALL_RECORDS[PATHWAY].isin(AFFIRMATIVE)
+            ]  # 10
             DF_SINGLE_OFFERS = DF_ALL_RECORDS[
-                DF_ALL_RECORDS[PATHWAY] != "Yes"
-            ]  # 2023-11-17 TODO: `PATHWAY == ""` not working
+                ~DF_ALL_RECORDS[PATHWAY].isin(
+                    AFFIRMATIVE
+                )  # Operator '~' equivalates to Series.isnotin()
+            ]  # 51
+
             # DF_AVIATION = DF_ALL_RECORDS  # TODO
             # DF_HARD_PACKAGE = DF_ALL_RECORDS  # TODO
             # DF_SOFT_PACKAGE = DF_ALL_RECORDS  # TODO
