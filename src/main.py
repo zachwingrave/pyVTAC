@@ -195,7 +195,7 @@ class MainApplication(tk.Frame):
                     else:
                         return number
 
-            def parseNumberReverse(
+            def parseNumberReverse(  # TODO
                 number,
             ):  # use reverse method to format phone numbers to AU
                 pass
@@ -322,11 +322,11 @@ class MainApplication(tk.Frame):
                 )  # Operator '~' equivalates to Series.isnotin()
             ]  # 51
 
-            # DF_AVIATION = DF_ALL_RECORDS  # TODO
-            # DF_HARD_PACKAGE = DF_ALL_RECORDS  # TODO
-            # DF_SOFT_PACKAGE = DF_ALL_RECORDS  # TODO
-            # DF_HARD_SINGLE = DF_ALL_RECORDS  # TODO
-            # DF_SOFT_SINGLE = DF_ALL_RECORDS  # TODO
+            # DF_AVIATION = DF_ALL_RECORDS # TODO
+            # DF_HARD_PACKAGE = DF_ALL_RECORDS # TODO
+            # DF_SOFT_PACKAGE = DF_ALL_RECORDS # TODO
+            # DF_HARD_SINGLE = DF_ALL_RECORDS # TODO
+            # DF_SOFT_SINGLE = DF_ALL_RECORDS # TODO
 
             """Step 7: Save all new sheets to disk"""
 
