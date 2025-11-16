@@ -76,6 +76,8 @@ class MainApplication(tk.Frame):
 
         self.logger.info("Main application window initialised")
 
+        pd.set_option("display.max_rows", 100)
+
         # <create the rest of your GUI here>
 
     def browseFiles(self):
@@ -123,13 +125,12 @@ class MainApplication(tk.Frame):
         self.logger.info("Opening results file")
         os.system('start EXCEL.EXE "' + self.writer.__fspath__() + '"')
 
-    def dataSummary(self, data, header=None):
+    def dataSummary(self, data, header=None, label="dataSummary", json=False):
+        self.logger.debug("Summarising data")
         dataSummary = {
             "Total rows": len(data.index),
             "Total cols": len(data.columns),
         }
-        # self.logger.debug("Column types:")
-        # self.logger.debug(data.dtypes)
         if header:
             self.logger.debug("Data summary for " + header)
         else:
@@ -137,12 +138,24 @@ class MainApplication(tk.Frame):
             self.logger.debug("Data summary")
         for key in dataSummary:
             self.logger.debug(header + " " + key + ": " + str(dataSummary[key]))
+        if json:  # TODO: Fix
+            self.logger.debug("Logging JSON for " + label)
+            jsonData = data.dtypes.to_json()
+            with open("../log/" + label + ".json", "w") as jsonFile:
+                jsonFile.write(jsonData)
+            self.logger.debug("JSON logged to " + label + ".json")
+        else:
+            # Assume .txt
+            # self.logger.debug("Column types:")
+            # self.logger.debug(data.dtypes)
+            with open("../log/" + label + ".txt", "w") as dtypeFile:
+                dtypeFile.write(str(data.dtypes))
 
     def cleanData(self):
         try:
             self.logger.debug("Cleaning data")
 
-            # Replace NA and NaN with "" for all String columns
+            # Replace NA and NaN with "" for all object columns (i.e. which should mostly be String)
             for series in self.data:
                 if self.data[series].dtype == "object":
                     self.data[series] = self.data[series].fillna(value="")
@@ -158,16 +171,43 @@ class MainApplication(tk.Frame):
             self.data[VC_ELIGIBILITY] = self.data[VC_ELIGIBILITY].str.upper()
             self.data[PATHWAY] = self.data[PATHWAY].str.upper()
 
+            # Set potentially empty string columns as String dtype, to avoid incorrect detection e.g. float64
+
+            self.data[VC_ELIGIBILITY] = self.data[VC_ELIGIBILITY].astype("string")
+            self.data[COURSE_TITLE] = self.data[COURSE_TITLE].astype("string")
+            self.data[STUDENT_ID] = self.data[STUDENT_ID].astype("string")
+            self.data[PATHWAY] = self.data[PATHWAY].astype("string")
+            self.data[STREAM] = self.data[STREAM].astype("string")
+            self.data[CAMPUS] = self.data[CAMPUS].astype("string")
+
+            # Replace NA and NaN with "" for all string columns
+            for series in self.data:
+                if self.data[series].dtype == "string":
+                    self.data[series] = self.data[series].fillna(value="")
+                    self.data[series] = self.data[series].apply(str.strip)
+
         except Exception as e:
             self.logger.exception(e)
 
     def sortData(self):
         try:
+            self.dataSummary(
+                self.data,
+                "ALL RECORDS",
+                label="beforeCleaning",
+                # json=True,
+                # typesOnly=True,
+            )
             self.cleanData()
-
+            self.dataSummary(
+                self.data,
+                "ALL RECORDS",
+                label="afterCleaning",
+                # json=True,
+                # typesOnly=True,
+            )
             self.logger.debug("Sorting data")
 
-            self.dataSummary(self.data, "ALL RECORDS")  # Summarise initial data state
             self.btnSortData.configure(
                 text="Sorting in progress", bootstyle=ttkc.WARNING
             )
@@ -243,6 +283,7 @@ class MainApplication(tk.Frame):
             """Step 3: Append 'Campus' to 'Course Title' """
 
             def dashCampus(campus):
+                # self.logger.info("TypeOf campus value: " + str(type(campus)))
                 if campus != "":
                     campus = " - " + campus
                 return campus
