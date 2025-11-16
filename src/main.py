@@ -138,17 +138,17 @@ class MainApplication(tk.Frame):
             self.logger.debug("Data summary")
         for key in dataSummary:
             self.logger.debug(header + " " + key + ": " + str(dataSummary[key]))
-        if json:  # TODO: Fix
-            self.logger.debug("Logging JSON for " + label)
-            jsonData = data.dtypes.to_json()
-            with open("../log/" + label + ".json", "w") as jsonFile:
-                jsonFile.write(jsonData)
-            self.logger.debug("JSON logged to " + label + ".json")
+        # if json:  # TODO: Fix
+        #     self.logger.debug("Logging JSON for " + label)
+        #     jsonData = data.dtypes.to_json()
+        #     with open(label + ".json", "w") as jsonFile:
+        #         jsonFile.write(jsonData)
+        #     self.logger.debug("JSON logged to " + label + ".json")
         else:
             # Assume .txt
             # self.logger.debug("Column types:")
             # self.logger.debug(data.dtypes)
-            with open("../log/" + label + ".txt", "w") as dtypeFile:
+            with open(label + ".txt", "w") as dtypeFile:
                 dtypeFile.write(str(data.dtypes))
 
     def cleanData(self):
