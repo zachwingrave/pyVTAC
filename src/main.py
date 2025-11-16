@@ -4,7 +4,8 @@ import tkinter.scrolledtext as tkst
 import ttkbootstrap as ttk
 import ttkbootstrap.constants as ttkc
 import pandas as pd
-import phonenumbers
+
+# import phonenumbers # Unused
 import logging
 import os
 
@@ -177,24 +178,25 @@ class MainApplication(tk.Frame):
 
             """Step 1: Format phone numbers to modified international format"""
 
-            def parseNumber(  # TODO: Fix
-                number,
-            ):  # use 'phonenumbers' module to format phone numbers to AU
-                try:
-                    parsedNumber = (
-                        phonenumbers.format_number(
-                            phonenumbers.parse(number, "AU"),
-                            phonenumbers.PhoneNumberFormat.INTERNATIONAL,  # leads with international calling code, +61
-                        )
-                        .replace("+", "")  # drop the leading +
-                        .replace(" ", "")  # drop spaces in the middle of the number
-                    )
-                    return parsedNumber
-                except phonenumbers.phonenumberutil.NumberParseException:
-                    if number == "nan":  # replace NaN with empty string
-                        return ""
-                    else:
-                        return number
+            # def parseNumber( # Unused
+            #     # TODO: Fix
+            #     number,
+            # ):  # use 'phonenumbers' module to format phone numbers to AU
+            #     try:
+            #         parsedNumber = (
+            #             phonenumbers.format_number(
+            #                 phonenumbers.parse(number, "AU"),
+            #                 phonenumbers.PhoneNumberFormat.INTERNATIONAL,  # leads with international calling code, +61
+            #             )
+            #             .replace("+", "")  # drop the leading +
+            #             .replace(" ", "")  # drop spaces in the middle of the number
+            #         )
+            #         return parsedNumber
+            #     except phonenumbers.phonenumberutil.NumberParseException:
+            #         if number == "nan":  # replace NaN with empty string
+            #             return ""
+            #         else:
+            #             return number
 
             def parseNumberReverse(  # TODO
                 number,
@@ -431,7 +433,7 @@ class TextHandler(logging.Handler):
             level=logging.DEBUG,
         )
 
-        self.log = loggingWidget
+        self.log = loggingWidget  # tkinter.scrolledtext
         self.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
             fmt="%(asctime)s %(levelname)-4s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -441,7 +443,7 @@ class TextHandler(logging.Handler):
     def emit(self, record):
         msg = self.format(record)
         self.log.configure(state="normal")
-        self.log.insert(ttk.END, msg + "\n")
+        self.log.insert(tk.END, msg + "\n")
         self.log.configure(state="disabled")
 
 
